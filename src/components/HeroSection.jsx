@@ -8,10 +8,10 @@ export default function HeroSection({ onStart }) {
     >
       <Chip />
 
-      <h1 className="max-w-[900px] text-[56px] md:text-[64px] font-extrabold leading-[120%] text-[#2D2D2D]">
-        Transform Complex Concepts into{" "}
+      <h1 className="max-w-[1100px] text-[56px] md:text-[64px] font-extrabold leading-[120%] text-[#2D2D2D]">
+        {" "}
         <span className="bg-gradient-to-r from-[#9B4DFF] to-[#00AEEF] bg-clip-text text-transparent">
-          Engaging GIFs and Videos
+        Transform Complex Concepts into Engaging GIFs and Videos
         </span>
       </h1>
 

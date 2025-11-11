@@ -18,9 +18,9 @@ export default function AuthModal({ open, mode = "login", onClose }) {
   const cardSize =
     mode === "login"
       ? "w-[402px] h-[413px] p-[39px]"
-      : "w-[399px] h-[502px] p-[39px]";
+      : "w-[402px] h-[502px] p-[39px]";
 
-  const title = mode === "signup" ? "Sign up" : "Log In";
+  const title = mode === "signup" ? "Sign Up" : "Log In";
   const cta   = mode === "signup" ? "Create Account" : "Log In";
 
   const handleSubmit = (e) => {
@@ -40,7 +40,7 @@ export default function AuthModal({ open, mode = "login", onClose }) {
           rounded-[30px] bg-[#FFFDFD] ${cardSize}
           flex flex-col items-start gap-4
         `}
-        // Figma box-shadow: -3px 4px 4px 0 rgba(0,0,0,0.25)
+            
         style={{ boxShadow: "-3px 4px 4px rgba(0,0,0,0.25)" }}
       >
         {/* 닫기 */}

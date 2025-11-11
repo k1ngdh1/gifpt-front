@@ -15,92 +15,93 @@ export default function WorkspacePage() {
       return;
     }
     setFileName(file.name);
-    // TODO: 여기서 업로드/파싱 로직 호출
-    // uploadPDF(file)
+    // TODO: 업로드 처리
   }, []);
 
   const onInputChange = (e) => handleFiles(e.target.files);
-
-  const onDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-  const onDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-  const onDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    handleFiles(e.dataTransfer.files);
-  };
+  const onDragOver  = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
+  const onDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
+  const onDrop      = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); handleFiles(e.dataTransfer.files); };
 
   return (
     <div className="min-h-screen bg-[#F7F7FD]">
-    {/* ✅ 진짜 Navbar로 교체 (로고 클릭 시 홈으로 이동 + Workspace 텍스트 표시) */}
-    <Navbar showAuthButtons={false} subtitle="Workspace" />
-      
+      <Navbar showAuthButtons={false} subtitle="Workspace" />
 
-      <main className="px-8 pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* ==== 업로드 존 (전체 클릭 + DnD) ==== */}
-          <div
-            onClick={openPicker}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            className={[
-              "rounded-xl bg-white p-8 flex flex-col items-center justify-center gap-4 transition cursor-pointer",
-              "border-2 border-dashed",
-              isDragging ? "border-[#8B5CF6] bg-purple-50 shadow-inner" : "border-purple-300"
-            ].join(" ")}
-            role="button"
-            aria-label="Upload PDF"
-          >
-            <img src="/Upload.svg" alt="Upload" className="w-12 h-12 object-contain" />
-            <p className="text-xl font-semibold text-black">
-              {fileName ? fileName : "Drop your PDF here"}
-            </p>
+      <main className="max-w-[1200px] mx-auto px-6 pb-12">
+        {/* 3열 그리드: 좌측 2열(위/아래), 우측 1열(2행 합침) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
 
-            <img src="/SelectFile.svg" alt="Select file" className="w-[130px] h-auto" />
+          {/* 좌상단 */}
+          <div className="lg:col-span-1 lg:-ml-2">
+            <div
+              onClick={openPicker}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              role="button"
+              aria-label="Upload PDF"
+              className={[
+                "rounded-2xl bg-white px-8 py-6 cursor-pointer transition",
+                "flex items-center justify-center",
+                "border-2 border-dashed",
+                "shadow-[0_6px_18px_rgba(0,0,0,0.06)]",
+                isDragging ? "border-[#9D6BFF] bg-purple-50" : "border-[#D9C6FF]"
+              ].join(" ")}
+              style={{ minHeight: 180 }} 
+            >
+              {/*가운데에 놓일 가로 레이아웃 */}
+              <div className="flex items-center gap-4">
+                <img src="/Upload.svg" alt="Upload" className="w-10 h-10" />
+                <div>
+                  <p className="text-[20px] font-semibold text-[#111] leading-tight">
+                    {fileName || "Drop your PDF here"}
+                  </p>
+                  <div className="mt-2">
+                    <img src="/SelectFile.svg" alt="Select file" className="h-8" />
+                  </div>
+                </div>
+              </div>
 
-            {/* 숨김 파일 입력 */}
-            <input
-              id="pdf-input"
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={onInputChange}
-            />
-          </div>
-
-          {/* 우측 패널 */}
-          <div className="rounded-xl border bg-white p-8 flex items-center justify-center text-gray-400">
-            <div className="text-center">
-              <p className="mb-3">Upload a document to start creating</p>
-              <div className="text-2xl">🎬</div>
+              <input
+                id="pdf-input"
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={onInputChange}
+              />
             </div>
           </div>
 
-          {/* 채팅 패널 */}
-          <div className="rounded-xl border bg-white p-4 flex flex-col">
-            <div className="flex-1 flex items-center justify-center text-gray-400">
-              Upload a document to start chatting
-            </div>
-            <div className="border-t pt-3">
-              <div className="flex items-center gap-2">
-                <input className="flex-1 border rounded-lg px-3 py-2" placeholder="Type a message..." />
-                <button className="p-2 rounded-full bg-[#6B4CF6] text-white">↑</button>
+          {/* ▸ 우측: 상/하 합친 큰 패널 */}
+          <div className="lg:col-span-2 lg:row-span-2 rounded-2xl bg-white p-8 text-gray-400 shadow-[0_6px_18px_rgba(0,0,0,0.06)] border border-[#EEE] min-h-[520px]">
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-center">
+                <p className="mb-3 text-[18px] text-[#8B8E99]">
+                  Upload a document<br/>to start creating
+                </p>
+                <div className="text-2xl">🎬</div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border bg-white p-8 flex items-center justify-center text-gray-300">
-            (Reserved)
+          {/* ▸ 좌하단: 채팅(크게) */}
+          <div className="lg:col-span-1 lg:-ml-2 rounded-2xl bg-white shadow-[0_6px_18px_rgba(0,0,0,0.06)] border border-[#EEE]">
+            <div className="h-[360px] flex items-center justify-center text-[#8B8E99]">
+              Upload a document to start chatting
+            </div>
+            <div className="px-4 pb-4">
+              <div className="flex items-center gap-2">
+                <input
+                  className="flex-1 border border-[#E5E7EB] rounded-xl px-4 py-3 outline-none"
+                  placeholder="Type a message..."
+                />
+                <button className="min-w-10 min-h-10 grid place-items-center rounded-full bg-[#6B4CF6] text-white">
+                  ↑
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
       </main>
     </div>

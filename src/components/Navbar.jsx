@@ -10,7 +10,7 @@ export default function Navbar({ onLoginClick, onSignupClick, showAuthButtons = 
         className="flex items-center gap-3 select-none cursor-pointer"
         onClick={() => navigate("/")} // ✅ 클릭 시 홈페이지로 이동
       >
-        <img src="/logo.png" alt="GIFPT logo" className="h-8 w-8" />
+        <img src="/logo.png" alt="GIFPT logo" className="h-12 w-12" />
         <h1
           className="text-[32px] md:text-[40px] font-extrabold leading-[120%] tracking-[-2.16px]
                      bg-gradient-to-r from-[#9B4DFF] to-[#00AEEF] bg-clip-text text-transparent"
