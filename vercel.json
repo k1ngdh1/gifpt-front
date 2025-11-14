@@ -8,10 +8,6 @@
     {
       "src": "/api/(.*)",
       "dest": "http://ec2-52-71-75-3.compute-1.amazonaws.com/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
     }
   ]
 }
