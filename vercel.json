@@ -2,7 +2,7 @@
   "version": 2,
   "rewrites": [
     { "source": "/healthz", "destination": "http://ec2-52-71-75-3.compute-1.amazonaws.com/healthz" },
-    { "source": "/api/:path*", "destination": "http://ec2-52-71-75-3.compute-1.amazonaws.com/api/$1" },
+    { "source": "/api/:path*", "destination": "http://ec2-52-71-75-3.compute-1.amazonaws.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
