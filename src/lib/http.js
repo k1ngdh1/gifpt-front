@@ -36,7 +36,7 @@ http.interceptors.request.use((config) => {
 });
 
 // ③ 응답 인터셉터: 401이면 refresh 시도
-let refreshing: Promise<string | null> | null = null;
+let refreshing = null;
 
 http.interceptors.response.use(
   (res) => res,
