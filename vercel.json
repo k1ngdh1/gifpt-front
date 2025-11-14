@@ -1,19 +1,8 @@
 {
   "version": 2,
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "http://ec2-52-71-75-3.compute-1.amazonaws.com/api/:path*"
-    },
-    {
-      "source": "/healthz",
-      "destination": "http://ec2-52-71-75-3.compute-1.amazonaws.com/healthz"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "source": "/healthz", "destination": "http://ec2-52-71-75-3.compute-1.amazonaws.com/healthz" },
+    { "source": "/api/(.*)", "destination": "http://ec2-52-71-75-3.compute-1.amazonaws.com/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
