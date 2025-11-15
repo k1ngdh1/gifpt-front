@@ -119,6 +119,7 @@ export default function AuthModal({ open, mode = "login", onClose, onSuccess }) 
           <input
             ref={emailRef}
             type="email"
+            inputMode="email"
             placeholder="Email"
             className="w-full rounded-md border border-[#E5E7EB] bg-white px-4 py-3 text-[16px]
                        shadow-[0_4px_0_rgba(0,0,0,0.05)] outline-none placeholder:text-gray-400
@@ -177,14 +178,26 @@ export default function AuthModal({ open, mode = "login", onClose, onSuccess }) 
 
           {/* CTA 버튼 */}
           <button
-            type="submit"
-            disabled={loading}
-            className="mt-1 w-full rounded-[14px] px-6 py-3 text-[20px] font-semibold text-white
-                       bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] shadow-md hover:opacity-90 transition
-                       disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? "처리 중…" : cta}
-          </button>
+  type="submit"
+  disabled={loading}
+  className="mt-1 w-full rounded-[14px] px-6 py-3 text-[20px] font-semibold text-white
+             bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] shadow-md hover:opacity-90 transition
+             disabled:opacity-60 disabled:cursor-not-allowed"
+>
+  {loading ? (
+    <div className="flex items-center justify-center gap-2">
+      {/* 동그라미 스피너 */}
+      <span
+        className="inline-block h-5 w-5 rounded-full border-2 border-white/40 border-t-white animate-spin"
+        aria-hidden="true"
+      />
+      <span>Processing…</span>
+    </div>
+  ) : (
+    cta
+  )}
+</button>
+
         </form>
       </div>
     </div>
