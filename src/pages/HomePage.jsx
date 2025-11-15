@@ -15,6 +15,11 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   const handleStart = () => {
+    if (!user) {
+      alert("로그인이 필요합니다. 먼저 로그인해 주세요. 🥲");
+      openLogin();
+      return;
+    }
     navigate("/projects"); // 👉 My Projects 페이지로 이동
   };
 
