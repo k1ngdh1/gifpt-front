@@ -82,7 +82,6 @@ export default function WorkspacePage() {
         if (!stop) timer = setTimeout(tick, 2000);
       } catch (e) {
         setMsg(`상태 조회 실패: ${e?.response?.status || ""} ${e.message}`);
-        // 에러가 반복되면 멈추고 싶으면 return
         if (!stop) timer = setTimeout(tick, 4000);
       }
     };
@@ -142,7 +141,9 @@ export default function WorkspacePage() {
             {!fileName && !resp && !uploading ? (
               <div className="w-full h-full flex items-center justify-center">
                 <div className="text-center text-[#8B8E99]">
-                  <p className="mb-3 text-[18px]">Upload a document<br/>to start creating</p>
+                  <p className="mb-3 text-[18px]">
+                    Upload a document<br/>to start creating
+                  </p>
                   <div className="text-2xl">🎬</div>
                 </div>
               </div>
@@ -152,7 +153,19 @@ export default function WorkspacePage() {
                   {fileName && <div>파일: <b>{fileName}</b></div>}
                   {jobId &&   <div>작업 ID: <code>{jobId}</code></div>}
                   {status &&  <div>상태: <b>{status}</b></div>}
-                  {msg &&     <div>메시지: {msg}</div>}
+
+                  {/* 🔥 여기 스피너 추가 */}
+                  {uploading || status === "PENDING" || status === "RUNNING" ? (
+                    <div className="flex items-center gap-2">
+                      <span>메시지:</span>
+                      <span
+                        className="inline-block h-4 w-4 rounded-full border-2 border-[#C4B5FD] border-t-[#7C3AED] animate-spin"
+                        aria-label="Loading"
+                      />
+                    </div>
+                  ) : (
+                    msg && <div>메시지: {msg}</div>
+                  )}
                 </div>
 
                 {resp?.result && (
