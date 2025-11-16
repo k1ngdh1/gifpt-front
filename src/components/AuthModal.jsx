@@ -35,11 +35,57 @@ export default function AuthModal({ open, mode = "login", onClose, onSuccess }) 
   const title = mode === "signup" ? "Sign Up" : "Log In";
   const cta   = mode === "signup" ? "Create Account" : "Log In";
 
-  const errMsg = (e) => {
-    const s = e?.response?.status;
-    const d = e?.response?.data;
-    return d?.message || d?.error || (s ? `요청 실패 (${s})` : e?.message || "요청 실패");
-  };
+  // mode에 따라 다른 문구를 보여주기 위해 mode를 인자로 받도록 변경
+const errMsg = (e, mode) => {
+  const s = e?.response?.status;
+  const d = e?.response?.data;
+
+  const raw = d?.message || d?.error || e?.message;
+
+  // 1) 네트워크 자체 오류
+  if (!e?.response) {
+    return "서버와 통신하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.";
+  }
+
+  // 2) 백엔드에서 에러 코드를 내려주는 경우(있다면)
+  const code = d?.code || d?.errorCode;
+  if (code === "USER_ALREADY_EXISTS") {
+    return "이미 가입된 이메일입니다. 다른 이메일을 사용해 주세요.";
+  }
+  if (code === "BAD_CREDENTIALS") {
+    return "이메일 또는 비밀번호를 다시 확인해 주세요.";
+  }
+
+  // 3) 상태코드 기반 기본 매핑
+  if (mode === "signup") {
+    // 회원가입
+    if (s === 409) {
+      return "이미 가입된 이메일입니다. 다른 이메일을 사용해 주세요.";
+    }
+    if (s === 400) {
+      return "입력하신 정보를 다시 확인해 주세요.";
+    }
+  }
+
+  if (mode === "login") {
+    // 로그인
+    if (s === 400 || s === 401 || s === 403) {
+      return "이메일 또는 비밀번호를 다시 확인해 주세요.";
+    }
+  }
+
+  // 4) 그 외 공통
+  if (s >= 500) {
+    return "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+  }
+
+  // 5) 백엔드에서 사람이 읽을 수 있는 message를 내려줬으면 그대로 사용
+  if (raw) return raw;
+
+  // 6) 마지막 fallback
+  return s ? `요청이 실패했습니다. (HTTP ${s})` : "요청이 실패했습니다.";
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,10 +125,12 @@ export default function AuthModal({ open, mode = "login", onClose, onSuccess }) 
       onSuccess?.(profile);
       onClose?.();
     } catch (e) {
-      setError(errMsg(e));
+      console.error("AUTH ERROR:", e?.response || e); // 디버깅용 콘솔
+      setError(errMsg(e, mode));
     } finally {
       setLoading(false);
     }
+
   };
 
   return (
