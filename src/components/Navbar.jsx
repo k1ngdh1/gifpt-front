@@ -57,12 +57,12 @@ export default function Navbar({
             </span>
             {/* Log In 스타일과 비슷한 Dashboard */}
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/projects")}
               className="px-4 py-2 rounded-md border border-black
                          text-[#333] font-medium
                          hover:bg-gray-50 transition-colors"
             >
-              Dashboard
+              My projects
             </button>
             {/* Sign Up 스타일과 비슷한 Logout */}
             <button
