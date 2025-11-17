@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
-import DashboardPage from "./pages/DashboardPage";
 import MyProjectsPage from "./pages/MyProjectsPage";
 import WorkspacePage from "./pages/WorkspacePage";
 import { useEffect } from "react";
@@ -22,7 +21,6 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/projects" element={<MyProjectsPage />} />
         <Route path="/workspace" element={<WorkspacePage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
     </Router>
   );
