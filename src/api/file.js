@@ -1,17 +1,18 @@
 // src/api/file.js
 import { http } from "../lib/http";
-const PREFIX = "/v1"; // 스웨거 기준
 
-// file + prompt 함께 전송
+const PREFIX = "/v1";
+
+// 🔥 프롬프트까지 같이 보내도록 수정
 export async function uploadFile(file, prompt) {
   const form = new FormData();
-  form.append("file", file); // 스웨거에 'file'로 보임
+  form.append("file", file);
 
   const { data } = await http.post(`${PREFIX}/file/upload`, form, {
-    // Postman이랑 똑같이 ?prompt=... 로 보내기
+    // Postman과 동일하게 ?prompt=... 로 전송
     params: prompt ? { prompt } : undefined,
     headers: { "Content-Type": "multipart/form-data" },
   });
 
-  return data; // 백엔드 응답 그대로 반환
+  return data; // { path, fileName, message, fileId, jobId? ... }
 }
