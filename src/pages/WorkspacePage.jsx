@@ -121,7 +121,7 @@ export default function WorkspacePage() {
     }
 
     const promptText = prompt.trim();
-
+    setPrompt("");
     // 유저 메시지 채팅 로그에 추가
     setChatMessages((prev) => [
       ...prev,
@@ -133,7 +133,7 @@ export default function WorkspacePage() {
 
     await doUpload(file, promptText);
 
-    setPrompt("");
+
     setFile(NULL);
     setFileName("");
   };
