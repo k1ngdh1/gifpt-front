@@ -269,7 +269,7 @@ export default function WorkspacePage() {
                 </button>
               </div>
               <p className="mt-1 text-[11px] text-[#9CA3AF]">
-                이 입력이 그대로 <code>?prompt=...</code> 로 전송됩니다.
+                이 입력이 그대로 <code>?prompt=...</code> 로 전송됩니다.!
               </p>
             </div>
           </div>
