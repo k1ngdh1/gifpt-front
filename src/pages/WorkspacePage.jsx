@@ -73,7 +73,6 @@ export default function WorkspacePage() {
 
   // PDF 선택/드롭 시: 서버로 업로드 X, 파일만 기억
   const handleFiles = useCallback((files) => {
-    if (uploading) return;
     const selected = files?.[0];
     if (!selected) return;
     if (
@@ -111,6 +110,7 @@ export default function WorkspacePage() {
 
   // 🔥 채팅 전송 버튼: 여기서 파일 + 프롬프트 업로드
   const handleSend = async () => {
+    if (uploading) return;
     if (!file) {
       setMsg("먼저 PDF 파일을 업로드하세요.");
       return;
