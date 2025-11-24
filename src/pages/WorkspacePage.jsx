@@ -73,6 +73,7 @@ export default function WorkspacePage() {
 
   // PDF 선택/드롭 시: 서버로 업로드 X, 파일만 기억
   const handleFiles = useCallback((files) => {
+    if (uploading) return;
     const selected = files?.[0];
     if (!selected) return;
     if (
@@ -131,6 +132,10 @@ export default function WorkspacePage() {
     // setPrompt("");
 
     await doUpload(file, promptText);
+
+    setPrompt("");
+    setFile(NULL);
+    setFileName("");
   };
 
   // ✅ 간단 폴링 루프
