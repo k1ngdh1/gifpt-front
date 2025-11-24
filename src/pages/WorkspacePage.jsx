@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { uploadFile } from "../api/file";
-import { getJob } from "../api/jobs";     // ✅ 추가
+import { getJob } from "../api/jobs"; // ✅ 추가
 
 export default function WorkspacePage() {
   const [isDragging, setIsDragging] = useState(false);
@@ -15,6 +15,9 @@ export default function WorkspacePage() {
   const [jobId, setJobId] = useState("");
   const [status, setStatus] = useState(""); // PENDING/RUNNING/DONE/ERROR
 
+  // ✅ 프롬프트 상태
+  const [prompt, setPrompt] = useState("이 PDF에서 핵심 아이디어를 요약해줘");
+
   const openPicker = () => document.getElementById("pdf-input")?.click();
 
   const doUpload = async (file) => {
@@ -24,7 +27,9 @@ export default function WorkspacePage() {
     setJobId("");
     setStatus("");
     try {
-      const data = await uploadFile(file); // { jobId: "...", ... } 기대
+      // 🔥 프롬프트 함께 전송
+      const data = await uploadFile(file, prompt); // { path, fileName, message, fileId, ... }
+
       setResp(data);
       const jid = data?.jobId || data?.id || "";
       if (jid) {
@@ -32,12 +37,17 @@ export default function WorkspacePage() {
         setStatus("PENDING");
         setMsg("작업 대기열에 등록됨");
       } else {
-        setMsg("업로드 완료(작업 ID 없음)");
+        // 현재 Postman 응답 형태에 맞는 메시지
+        setMsg(data?.message || "업로드 완료(작업 ID 없음)");
       }
     } catch (e) {
       const s = e?.response?.status;
       const d = e?.response?.data;
-      setMsg(`업로드 실패: ${s || ""} ${e.message}${d ? " " + JSON.stringify(d) : ""}`);
+      setMsg(
+        `업로드 실패: ${s || ""} ${e.message}${
+          d ? " " + JSON.stringify(d) : ""
+        }`
+      );
     } finally {
       setUploading(false);
     }
@@ -46,7 +56,10 @@ export default function WorkspacePage() {
   const handleFiles = useCallback((files) => {
     const file = files?.[0];
     if (!file) return;
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    if (
+      file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
       alert("PDF만 업로드하세요.");
       return;
     }
@@ -55,9 +68,22 @@ export default function WorkspacePage() {
   }, []);
 
   const onInputChange = (e) => handleFiles(e.target.files);
-  const onDragOver  = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
-  const onDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
-  const onDrop      = (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); handleFiles(e.dataTransfer.files); };
+  const onDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleFiles(e.dataTransfer.files);
+  };
 
   // ✅ 간단 폴링 루프
   useEffect(() => {
@@ -67,7 +93,7 @@ export default function WorkspacePage() {
 
     const tick = async () => {
       try {
-        const data = await getJob(jobId);      // { status, result, ... } 가정
+        const data = await getJob(jobId); // { status, result, ... } 가정
         const st = data?.status || "";
         setStatus(st);
         if (st === "DONE") {
@@ -87,7 +113,10 @@ export default function WorkspacePage() {
     };
 
     tick();
-    return () => { stop = true; clearTimeout(timer); };
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
   }, [jobId]);
 
   return (
@@ -96,8 +125,9 @@ export default function WorkspacePage() {
 
       <main className="max-w-[1200px] mx-auto px-6 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-          {/* 업로드 카드 */}
-          <div className="lg:col-span-1 lg:-ml-2">
+          {/* 업로드 + 프롬프트 카드 */}
+          <div className="lg:col-span-1 lg:-ml-2 space-y-4">
+            {/* 업로드 박스 */}
             <div
               onClick={openPicker}
               onDragOver={onDragOver}
@@ -110,7 +140,9 @@ export default function WorkspacePage() {
                 "flex items-center justify-center",
                 "border-2 border-dashed",
                 "shadow-[0_6px_18px_rgba(0,0,0,0.06)]",
-                isDragging ? "border-[#9D6BFF] bg-purple-50" : "border-[#D9C6FF]"
+                isDragging
+                  ? "border-[#9D6BFF] bg-purple-50"
+                  : "border-[#D9C6FF]",
               ].join(" ")}
               style={{ minHeight: 180 }}
             >
@@ -121,7 +153,11 @@ export default function WorkspacePage() {
                     {fileName || "Drop your PDF here"}
                   </p>
                   <div className="mt-2">
-                    <img src="/SelectFile.svg" alt="Select file" className="h-8" />
+                    <img
+                      src="/SelectFile.svg"
+                      alt="Select file"
+                      className="h-8"
+                    />
                   </div>
                 </div>
               </div>
@@ -134,6 +170,23 @@ export default function WorkspacePage() {
                 onChange={onInputChange}
               />
             </div>
+
+            {/* 🔥 프롬프트 입력 */}
+            <div className="rounded-2xl bg-white px-4 py-4 shadow-[0_6px_18px_rgba(0,0,0,0.06)] border border-[#EEE]">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                요약 프롬프트
+              </label>
+              <textarea
+                className="w-full border border-[#E5E7EB] rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#6B4CF6]"
+                rows={3}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="이 PDF에서 핵심 아이디어를 요약해줘"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                이 문장이 그대로 백엔드에 <code>?prompt=...</code> 로 전달됩니다.
+              </p>
+            </div>
           </div>
 
           {/* 결과/상태 패널 */}
@@ -142,7 +195,9 @@ export default function WorkspacePage() {
               <div className="w-full h-full flex items-center justify-center">
                 <div className="text-center text-[#8B8E99]">
                   <p className="mb-3 text-[18px]">
-                    Upload a document<br/>to start creating
+                    Upload a document
+                    <br />
+                    to start creating
                   </p>
                   <div className="text-2xl">🎬</div>
                 </div>
@@ -150,12 +205,26 @@ export default function WorkspacePage() {
             ) : (
               <div className="space-y-3">
                 <div className="text-sm text-gray-600 space-y-1">
-                  {fileName && <div>파일: <b>{fileName}</b></div>}
-                  {jobId &&   <div>작업 ID: <code>{jobId}</code></div>}
-                  {status &&  <div>상태: <b>{status}</b></div>}
+                  {fileName && (
+                    <div>
+                      파일: <b>{fileName}</b>
+                    </div>
+                  )}
+                  {jobId && (
+                    <div>
+                      작업 ID: <code>{jobId}</code>
+                    </div>
+                  )}
+                  {status && (
+                    <div>
+                      상태: <b>{status}</b>
+                    </div>
+                  )}
 
-                  {/* 🔥 여기 스피너 추가 */}
-                  {uploading || status === "PENDING" || status === "RUNNING" ? (
+                  {/* 🔥 여기 스피너 */}
+                  {uploading ||
+                  status === "PENDING" ||
+                  status === "RUNNING" ? (
                     <div className="flex items-center gap-2">
                       <span>메시지:</span>
                       <span
@@ -206,7 +275,6 @@ export default function WorkspacePage() {
               </div>
             </div>
           </div>
-
         </div>
       </main>
     </div>
