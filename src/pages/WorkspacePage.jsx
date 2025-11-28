@@ -2,63 +2,90 @@
 import { useState, useCallback, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { uploadFile } from "../api/file";
-import { getJob } from "../api/jobs";
+import { createWorkspace, getWorkspace } from "../api/workspaces";
 
 export default function WorkspacePage() {
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState("");
-  const [file, setFile] = useState(null);              // ✅ 실제 파일 저장
+  const [file, setFile] = useState(null); // 선택된 실제 파일
   const [msg, setMsg] = useState("");
   const [resp, setResp] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  // ✅ 폴링용 상태
-  const [jobId, setJobId] = useState("");
+  // 워크스페이스 상태
+  const [workspaceId, setWorkspaceId] = useState(null);
   const [status, setStatus] = useState(""); // PENDING/RUNNING/DONE/ERROR
 
-  // ✅ 채팅(프롬프트) 상태
+  // 채팅(프롬프트) 상태
   const [prompt, setPrompt] = useState("이 PDF에서 핵심 아이디어를 요약해줘");
   const [chatMessages, setChatMessages] = useState([]); // { role: 'user' | 'assistant', text }
 
   const openPicker = () => document.getElementById("pdf-input")?.click();
 
-  // 🔥 실제 업로드 함수: 파일 + 프롬프트 같이 보냄
-  const doUpload = async (fileToUpload, promptText) => {
+  // 🔥 실제 업로드 + 워크스페이스 생성 함수
+  const doUploadAndCreateWorkspace = async (fileToUpload, promptText) => {
     setUploading(true);
-    setMsg("업로드 중…");
+    setMsg("업로드 및 워크스페이스 생성 중…");
     setResp(null);
-    setJobId("");
+    setWorkspaceId(null);
     setStatus("");
 
     try {
-      const data = await uploadFile(fileToUpload, promptText); // { jobId: "...", ... } 기대
-      setResp(data);
-      const jid = data?.jobId || data?.id || "";
-      if (jid) {
-        setJobId(jid);
-        setStatus("PENDING");
-        setMsg("작업 대기열에 등록됨");
+      // 1) 파일 업로드 → fileId 획득
+      const fileRes = await uploadFile(fileToUpload, promptText);
+      // 예상 응답: { path, fileName, fileId, message, ... }
+      const fileId = fileRes?.fileId;
 
-        // 채팅 로그에 서버 응답 안내 추가
+      if (!fileId) {
+        const err = "파일 업로드 응답에 fileId가 없습니다.";
+        setMsg(err);
         setChatMessages((prev) => [
           ...prev,
-          {
-            role: "assistant",
-            text: `✅ 파일 업로드 완료. 요약을 생성 중입니다. (jobId: ${jid})`,
-          },
+          { role: "assistant", text: `❌ ${err}` },
         ]);
-      } else {
-        const text = data?.message || "업로드 완료(작업 ID 없음)";
-        setMsg(text);
-        setChatMessages((prev) => [
-          ...prev,
-          { role: "assistant", text: `✅ ${text}` },
-        ]);
+        return;
       }
+
+      // 안내 메시지 추가
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: `✅ 파일 업로드 완료 (fileId: ${fileId}). 워크스페이스를 생성합니다.`,
+        },
+      ]);
+
+      // 2) 워크스페이스 생성
+      const title =
+        fileRes?.fileName?.replace(/\.pdf$/i, "") ||
+        fileToUpload.name.replace(/\.pdf$/i, "") ||
+        "새 워크스페이스";
+
+      const ws = await createWorkspace({
+        title,
+        fileId,
+        userPrompt: promptText,
+      });
+
+      // 예상 응답: { id, title, prompt, pdfPath, summary, videoUrl, status, ... }
+      setResp(ws);
+      setWorkspaceId(ws.id);
+      setStatus(ws.status || "PENDING");
+      setMsg("워크스페이스가 생성되었습니다. 분석이 진행 중입니다.");
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: `✅ 워크스페이스가 생성되었습니다. (id: ${ws.id}, 상태: ${
+            ws.status || "PENDING"
+          })`,
+        },
+      ]);
     } catch (e) {
       const s = e?.response?.status;
       const d = e?.response?.data;
-      const err = `업로드 실패: ${s || ""} ${e.message}${
+      const err = `업로드/워크스페이스 생성 실패: ${s || ""} ${e.message}${
         d ? " " + JSON.stringify(d) : ""
       }`;
       setMsg(err);
@@ -68,10 +95,13 @@ export default function WorkspacePage() {
       ]);
     } finally {
       setUploading(false);
+      // 업로드 끝나면 업로드 영역 clean 상태로 리셋
+      setFile(null);
+      setFileName("");
     }
   };
 
-  // PDF 선택/드롭 시: 서버로 업로드 X, 파일만 기억
+  // PDF 선택/드롭 시: 아직 서버 호출 X, 파일만 기억
   const handleFiles = useCallback((files) => {
     const selected = files?.[0];
     if (!selected) return;
@@ -85,7 +115,7 @@ export default function WorkspacePage() {
     setFile(selected);
     setFileName(selected.name);
     setResp(null);
-    setJobId("");
+    setWorkspaceId(null);
     setStatus("");
     setMsg("파일이 선택되었습니다. 프롬프트를 입력하고 전송 버튼을 눌러주세요.");
   }, []);
@@ -108,11 +138,18 @@ export default function WorkspacePage() {
     handleFiles(e.dataTransfer.files);
   };
 
-  // 🔥 채팅 전송 버튼: 여기서 파일 + 프롬프트 업로드
+  // 🔥 채팅 전송 버튼: 여기서 파일 + 프롬프트 업로드 + 워크스페이스 생성
   const handleSend = async () => {
     if (uploading) return;
     if (!file) {
       setMsg("먼저 PDF 파일을 업로드하세요.");
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: "❗ 먼저 위에서 PDF 파일을 선택(또는 드래그&드롭)해 주세요.",
+        },
+      ]);
       return;
     }
     if (!prompt.trim()) {
@@ -121,44 +158,36 @@ export default function WorkspacePage() {
     }
 
     const promptText = prompt.trim();
-    setPrompt("");
+
     // 유저 메시지 채팅 로그에 추가
-    setChatMessages((prev) => [
-      ...prev,
-      { role: "user", text: promptText },
-    ]);
+    setChatMessages((prev) => [...prev, { role: "user", text: promptText }]);
 
-    // 필요하면 프롬프트를 계속 남길지 비울지 선택 (여기선 남겨둠)
-    // setPrompt("");
+    // 엔터 치자마자 비우기
+    setPrompt("");
 
-    await doUpload(file, promptText);
-
-
-    setFile(NULL);
-    setFileName("");
+    await doUploadAndCreateWorkspace(file, promptText);
   };
 
-  // ✅ 간단 폴링 루프
+  // ✅ 워크스페이스 상태 폴링 루프
   useEffect(() => {
-    if (!jobId) return;
+    if (!workspaceId) return;
     let stop = false;
     let timer;
 
     const tick = async () => {
       try {
-        const data = await getJob(jobId); // { status, result, ... } 가정
+        const data = await getWorkspace(workspaceId); // { status, summary, ... } 가정
         const st = data?.status || "";
         setStatus(st);
-        if (st === "DONE") {
-          setMsg("완료");
-          setResp((prev) => ({ ...prev, result: data?.result ?? data })); // 결과 합침
+        setResp(data);
 
-          // 요약 끝났다는 메시지를 채팅에 남김
+        if (st === "DONE") {
+          setMsg("분석이 완료되었습니다.");
           setChatMessages((prev) => [
             ...prev,
             {
               role: "assistant",
-              text: "✅ 요약 생성이 완료되었습니다. 우측 패널에서 결과를 확인하세요.",
+              text: "✅ 분석이 완료되었습니다. 우측 패널에서 요약 결과를 확인하세요.",
             },
           ]);
           return; // stop
@@ -174,9 +203,9 @@ export default function WorkspacePage() {
         }
         if (!stop) timer = setTimeout(tick, 2000);
       } catch (e) {
-        const errMsg = `상태 조회 실패: ${e?.response?.status || ""} ${
-          e.message
-        }`;
+        const errMsg = `워크스페이스 상태 조회 실패: ${
+          e?.response?.status || ""
+        } ${e.message}`;
         setMsg(errMsg);
         setChatMessages((prev) => [
           ...prev,
@@ -191,7 +220,7 @@ export default function WorkspacePage() {
       stop = true;
       clearTimeout(timer);
     };
-  }, [jobId]);
+  }, [workspaceId]);
 
   return (
     <div className="min-h-screen bg-[#F7F7FD]">
@@ -252,7 +281,7 @@ export default function WorkspacePage() {
 
           {/* 결과/상태 패널 */}
           <div className="lg:col-span-2 lg:row-span-2 rounded-2xl bg-white p-8 text-gray-800 shadow-[0_6px_18px_rgba(0,0,0,0.06)] border border-[#EEE] min-h-[520px]">
-            {!fileName && !resp && !uploading ? (
+            {!fileName && !resp && !uploading && !workspaceId ? (
               <div className="w-full h-full flex items-center justify-center">
                 <div className="text-center text-[#8B8E99]">
                   <p className="mb-3 text-[18px]">
@@ -271,9 +300,9 @@ export default function WorkspacePage() {
                       파일: <b>{fileName}</b>
                     </div>
                   )}
-                  {jobId && (
+                  {workspaceId && (
                     <div>
-                      작업 ID: <code>{jobId}</code>
+                      워크스페이스 ID: <code>{workspaceId}</code>
                     </div>
                   )}
                   {status && (
@@ -282,7 +311,7 @@ export default function WorkspacePage() {
                     </div>
                   )}
 
-                  {/* 🔥 여기 스피너 추가 */}
+                  {/* 스피너 */}
                   {uploading ||
                   status === "PENDING" ||
                   status === "RUNNING" ? (
@@ -298,18 +327,20 @@ export default function WorkspacePage() {
                   )}
                 </div>
 
-                {resp?.result && (
+                {/* 요약 결과가 있다면 먼저 보여주기 */}
+                {resp?.summary && (
                   <div className="mt-2">
-                    <h2 className="font-semibold mb-2">결과</h2>
-                    <pre className="text-xs whitespace-pre-wrap break-words bg-gray-50 p-3 rounded border">
-                      {JSON.stringify(resp.result, null, 2)}
-                    </pre>
+                    <h2 className="font-semibold mb-2">요약 결과</h2>
+                    <div className="text-sm whitespace-pre-wrap break-words bg-gray-50 p-3 rounded border">
+                      {resp.summary}
+                    </div>
                   </div>
                 )}
 
-                {!resp?.result && resp && (
+                {/* 전체 응답 디버그용 */}
+                {resp && (
                   <div className="mt-2">
-                    <h2 className="font-semibold mb-2">응답</h2>
+                    <h2 className="font-semibold mb-2">전체 응답(JSON)</h2>
                     <pre className="text-xs whitespace-pre-wrap break-words bg-gray-50 p-3 rounded border">
                       {JSON.stringify(resp, null, 2)}
                     </pre>
@@ -379,8 +410,7 @@ export default function WorkspacePage() {
                 </button>
               </div>
               <p className="mt-1 text-[11px] text-[#9CA3AF]">
-                이 입력이 그대로 <code>?prompt=...</code> 로 전송됩니다. (먼저 PDF를
-                업로드해야 합니다)
+                먼저 PDF를 선택한 뒤, 이 입력을 워크스페이스 생성 프롬프트로 전송합니다.
               </p>
             </div>
           </div>
