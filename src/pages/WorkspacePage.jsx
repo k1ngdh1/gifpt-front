@@ -51,7 +51,7 @@ export default function WorkspacePage() {
         ...prev,
         {
           role: "assistant",
-          text: `✅ 파일 업로드 완료 (fileId: ${fileId}). 워크스페이스를 생성합니다.`,
+          text: `✅ 파일 업로드 완료. 워크스페이스를 생성합니다.`,
         },
       ]);
 
@@ -73,15 +73,6 @@ export default function WorkspacePage() {
       setStatus(ws.status || "PENDING");
       setMsg("워크스페이스가 생성되었습니다. 분석이 진행 중입니다.");
 
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          text: `✅ 워크스페이스가 생성되었습니다. (id: ${ws.id}, 상태: ${
-            ws.status || "PENDING"
-          })`,
-        },
-      ]);
     } catch (e) {
       const s = e?.response?.status;
       const d = e?.response?.data;
@@ -391,17 +382,7 @@ const handleSend = async () => {
             className="w-full max-h-[360px] rounded-xl border bg-black"
           />
         </div>
-      )}
-
-                {/* 전체 응답 디버그용 */}
-                {resp && (
-                  <div className="mt-2">
-                    <h2 className="font-semibold mb-2">전체 응답(JSON)</h2>
-                    <pre className="text-xs whitespace-pre-wrap break-words bg-gray-50 p-3 rounded border">
-                      {JSON.stringify(resp, null, 2)}
-                    </pre>
-                  </div>
-                )}
+      )}        
               </div>
             )}
           </div>
