@@ -1,36 +1,38 @@
-// src/api/workspaces.js
 import { http, PREFIX } from "../lib/http";
 
-/**
- * POST /api/v1/workspaces
- * body: { title, fileId, userPrompt }
- */
 export async function createWorkspace({ title, fileId, userPrompt }) {
-  const { data } = await http.post(`${PREFIX}/workspaces`, {
+  const { data } = await http.post(`${PREFIX}/workspaces/from-file`, {
     title,
     fileId,
     userPrompt,
   });
-  return data;
+  return data; // { id, status, summary, resultUrl, ... }
 }
 
-/**
- * GET /api/v1/workspaces/{workspaceId}
- */
 export async function getWorkspace(workspaceId) {
   const { data } = await http.get(`${PREFIX}/workspaces/${workspaceId}`);
   return data;
 }
-
 /**
- * POST /api/v1/workspaces/{workspaceId}/chat
- * body: { message }
+ * 🆕 GET /api/v1/workspaces
+ * - 내 워크스페이스 목록 조회
+ * - 백엔드에서 Page<Workspace> 로 돌려줄 수도 있어서 둘 다 처리
  */
+export async function listWorkspaces() {
+  const { data } = await http.get(`${PREFIX}/workspaces`);
+  // 1) 그냥 배열로 오는 경우: [ {id, title, ...}, ... ]
+  if (Array.isArray(data)) return data;
+  // 2) Spring Page 형식: { content: [...], totalElements, ... }
+  if (Array.isArray(data?.content)) return data.content;
+  return [];
+}
 export async function chatWorkspace(workspaceId, message) {
-  const { data } = await http.post(
-    `${PREFIX}/workspaces/${workspaceId}/chat`,
-    { message }
-  );
-  // data 안에 뭐가 오는지에 따라 UI에서 뽑아 쓸 거라 그대로 리턴
+  const { data } = await http.post(`${PREFIX}/workspaces/${workspaceId}/chat`, {
+    message,
+  });
+  // 백엔드 응답 형식을 그대로 반환
   return data;
+}
+export async function deleteWorkspace(workspaceId) {
+  await http.delete(`${PREFIX}/workspaces/${workspaceId}`);
 }
