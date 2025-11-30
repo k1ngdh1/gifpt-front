@@ -336,6 +336,16 @@ export default function WorkspacePage() {
                     </div>
                   </div>
                 )}
+                {resp?.resultUrl && (
+        <div className="mt-4">
+          <h2 className="font-semibold mb-2">생성된 영상</h2>
+          <video
+            src={resp.resultUrl}
+            controls
+            className="w-full max-h-[360px] rounded-xl border bg-black"
+          />
+        </div>
+      )}
 
                 {/* 전체 응답 디버그용 */}
                 {resp && (

@@ -1,16 +1,18 @@
 import axios from "axios";
 
-// ① axios 기본 설정
+// Vercel + EC2 프록시 구조:
+// - vercel.json 에서 /api/** → EC2:80/api/** 로 리라이트
+//   (이미 이렇게 설정되어 있음)
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE,  // .env.local의 /api
-  withCredentials: true,                  // ★ 쿠키 항상 같이 보내기
+  baseURL: import.meta.env.VITE_API_BASE || "", // 배포에서는 보통 ""
+  withCredentials: true,
   timeout: 15000,
 });
 
-// API prefix (/v1)
-const PREFIX = import.meta.env.VITE_API_PREFIX || "/v1";
+// /api/v1 prefix
+const PREFIX = import.meta.env.VITE_API_PREFIX || "/api/v1";
 
-// 토큰 안 붙일 경로들 (회원가입/로그인/리프레시/헬스)
+// 토큰 안 붙일 경로들
 const NO_AUTH_PATHS = [
   `${PREFIX}/auth/signup`,
   `${PREFIX}/auth/login`,
@@ -18,14 +20,10 @@ const NO_AUTH_PATHS = [
   "/healthz",
 ];
 
-// ② 요청 인터셉터: JWT 자동 추가 (공개 엔드포인트는 제외)
+// 요청 인터셉터: JWT 자동 추가
 http.interceptors.request.use((config) => {
   const url = config.url || "";
-
-  // NO_AUTH_PATHS에 포함되면 그냥 토큰 안 붙이고 통과
-  if (NO_AUTH_PATHS.some((p) => url.startsWith(p))) {
-    return config;
-  }
+  if (NO_AUTH_PATHS.some((p) => url.startsWith(p))) return config;
 
   const token = localStorage.getItem("access_token");
   if (token) {
@@ -35,29 +33,26 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
-// ③ 응답 인터셉터: 401이면 refresh 시도
-let refreshing = null
+// 401 → refresh 흐름 (지금 쓰는 코드 그대로 두면 됨)
+let refreshing = null;
 
 http.interceptors.response.use(
   (res) => res,
   async (err) => {
     const { response, config } = err || {};
     if (response?.status === 401 && !config._retry) {
-      // refresh 자기 자신 호출이면 재귀 방지
       if (config.url?.startsWith(`${PREFIX}/auth/refresh`)) {
         return Promise.reject(err);
       }
-
       config._retry = true;
 
       if (!refreshing) {
-        // ★ body에 refreshToken 절대 안 넘김 (쿠키만)
         refreshing = http
           .post(`${PREFIX}/auth/refresh`)
           .then(({ data }) => {
             const at = data?.accessToken || data?.access_token;
             if (at) {
-              localStorage.setItem("access_token", at);   // 새 access 저장
+              localStorage.setItem("access_token", at);
               return at;
             }
             return null;
@@ -66,7 +61,6 @@ http.interceptors.response.use(
             refreshing = null;
           });
       }
-
       const newAT = await refreshing;
       if (newAT) {
         config.headers = config.headers || {};
@@ -74,11 +68,11 @@ http.interceptors.response.use(
         return http(config);
       }
     }
+
     if (typeof window !== "undefined") {
-      window.__http = http;    // 전역 디버그 핸들
+      window.__http = http;
       window.__PREFIX = PREFIX;
     }
-    
     return Promise.reject(err);
   }
 );

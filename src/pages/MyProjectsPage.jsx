@@ -9,17 +9,17 @@ const MOCK_PROJECTS = [
   {
     id: "linear-search",
     title: "Linear Search",
-    thumbnail: "/projects/linear-search.png",
+    thumbnail: "/linear_search.png",
   },
   {
     id: "binary-search-tree",
     title: "Binary Search Tree",
-    thumbnail: "/projects/bst.png",
+    thumbnail: "/BST.png",
   },
   {
     id: "bubble-sort",
     title: "Bubble Sort",
-    thumbnail: "/projects/bubble-sort.png",
+    thumbnail: "/BubbleSort.png",
   },
   {
     id: "dijkstra",
