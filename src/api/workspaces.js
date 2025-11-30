@@ -1,7 +1,7 @@
 import { http, PREFIX } from "../lib/http";
 
 export async function createWorkspace({ title, fileId, userPrompt }) {
-  const { data } = await http.post(`${PREFIX}/workspaces`, {
+  const { data } = await http.post(`${PREFIX}/workspaces/from-file`, {
     title,
     fileId,
     userPrompt,
