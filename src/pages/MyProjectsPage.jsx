@@ -1,10 +1,11 @@
 // src/pages/ProjectsPage.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ProjectCard from "../components/ProjectCard";
+import { listWorkspaces } from "../api/workspaces";
 
-// 임시 더미 데이터 (나중에 백엔드 연동 시 교체)
+// 백엔드에 아무 데이터도 없을 때 보여줄 데모 카드들
 const MOCK_PROJECTS = [
   {
     id: "linear-search",
@@ -26,22 +27,62 @@ const MOCK_PROJECTS = [
     title: "Dijkstra’s Algorithm",
     thumbnail: "/projects/dijkstra.png",
   },
-  // 필요하면 더 추가
 ];
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
 
+  const [projects, setProjects] = useState([]); // 실제 워크스페이스 리스트
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // 새 프로젝트 생성 → 워크스페이스로 이동
   const handleCreateNew = () => {
-    // 새 프로젝트 생성 → 워크스페이스로 이동
     navigate("/workspace");
   };
 
-  const handleOpenProject = (projectId) => {
-    // 나중에 실제 프로젝트 상세 경로로 변경하면 됨
-    // 예: navigate(`/workspace/${projectId}`);
-    navigate(`/workspace?project=${projectId}`);
+  // 특정 워크스페이스 열기
+  const handleOpenProject = (workspaceId) => {
+    // workspaceId를 쿼리로 넘겨서 WorkspacePage에서 불러오게 함
+    navigate(`/workspace?workspaceId=${workspaceId}`);
   };
+
+  // 마운트 시 내 워크스페이스 목록 조회
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchProjects() {
+      try {
+        setLoading(true);
+        const list = await listWorkspaces(); // [{id, title, status, ...}, ...]
+
+        if (cancelled) return;
+
+        // 카드에서 사용할 최소 정보만 추려서 매핑
+        const mapped = (list || []).map((w) => ({
+          id: w.id,
+          title: w.title || `Workspace #${w.id}`,
+          thumbnail: "/projects/default.png", // 필요하면 백엔드 필드로 교체
+          status: w.status,
+        }));
+
+        setProjects(mapped);
+      } catch (e) {
+        console.error("Failed to fetch workspaces", e);
+        if (!cancelled) {
+          setError("워크스페이스 목록을 불러오는 데 실패했습니다.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchProjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F7F7FD]">
@@ -99,15 +140,43 @@ export default function ProjectsPage() {
             </div>
           </button>
 
-          {/* 기존 프로젝트 카드들 */}
-          {MOCK_PROJECTS.map((p) => (
-            <ProjectCard
-              key={p.id}
-              title={p.title}
-              thumbnail={p.thumbnail}
-              onClick={() => handleOpenProject(p.id)}
-            />
-          ))}
+          {/* 로딩/에러 표시 */}
+          {loading && (
+            <div className="col-span-full flex items-center justify-center text-sm text-gray-500">
+              워크스페이스를 불러오는 중입니다...
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="col-span-full flex items-center justify-center text-sm text-red-500">
+              {error}
+            </div>
+          )}
+
+          {/* 실제 워크스페이스 카드들 */}
+          {!loading &&
+            projects.map((p) => (
+              <ProjectCard
+                key={p.id}
+                title={p.title}
+                thumbnail={p.thumbnail}
+                subtitle={p.status ? `Status: ${p.status}` : undefined}
+                onClick={() => handleOpenProject(p.id)}
+              />
+            ))}
+
+          {/* 백엔드에서 가져온 프로젝트가 없으면, 기존 더미 카드 보여주기 */}
+          {!loading &&
+            !error &&
+            projects.length === 0 &&
+            MOCK_PROJECTS.map((p) => (
+              <ProjectCard
+                key={p.id}
+                title={p.title}
+                thumbnail={p.thumbnail}
+                onClick={() => handleOpenProject(p.id)}
+              />
+            ))}
         </section>
       </main>
     </div>
