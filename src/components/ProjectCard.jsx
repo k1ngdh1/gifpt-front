@@ -1,7 +1,7 @@
 // src/components/ProjectCard.jsx
 import React from "react";
 
-e// src/components/ProjectCard.jsx
+// src/components/ProjectCard.jsx
 export default function ProjectCard({
   title,
   thumbnail,
