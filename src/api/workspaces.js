@@ -33,3 +33,6 @@ export async function chatWorkspace(workspaceId, message) {
   // 백엔드 응답 형식을 그대로 반환
   return data;
 }
+export async function deleteWorkspace(workspaceId) {
+  await http.delete(`${PREFIX}/workspaces/${workspaceId}`);
+}
