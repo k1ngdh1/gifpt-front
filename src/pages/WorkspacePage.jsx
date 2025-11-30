@@ -378,14 +378,14 @@ const handleSend = async () => {
                 </div>
 
                 {/* 요약 결과가 있다면 먼저 보여주기 */}
-                {resp?.summary && (
+                {/*{resp?.summary && (
                   <div className="mt-2">
                     <h2 className="font-semibold mb-2">요약 결과</h2>
                     <div className="text-sm whitespace-pre-wrap break-words bg-gray-50 p-3 rounded border">
                       {resp.summary}
                     </div>
                   </div>
-                )}
+                )}*/}
 
                 {/* 생성된 영상 재생 */}
                 {resp?.videoUrl && (
