@@ -26,3 +26,10 @@ export async function listWorkspaces() {
   if (Array.isArray(data?.content)) return data.content;
   return [];
 }
+export async function chatWorkspace(workspaceId, message) {
+  const { data } = await http.post(`${PREFIX}/workspaces/${workspaceId}/chat`, {
+    message,
+  });
+  // 백엔드 응답 형식을 그대로 반환
+  return data;
+}

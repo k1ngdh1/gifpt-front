@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { uploadFile } from "../api/file";
-import { createWorkspace, getWorkspace } from "../api/workspaces";
+import { createWorkspace, getWorkspace, chatWorkspace} from "../api/workspaces";
 
 export default function WorkspacePage() {
   const [isDragging, setIsDragging] = useState(false);
@@ -139,8 +139,27 @@ export default function WorkspacePage() {
   };
 
   // 🔥 채팅 전송 버튼: 여기서 파일 + 프롬프트 업로드 + 워크스페이스 생성
-  const handleSend = async () => {
-    if (uploading) return;
+// 🔥 채팅 전송 버튼: 
+//  - 아직 워크스페이스가 없으면 → 파일 업로드 + 워크스페이스 생성
+//  - 이미 워크스페이스가 있으면 → 해당 워크스페이스에 /chat 요청
+const handleSend = async () => {
+  if (uploading) return;
+
+  if (!prompt.trim()) {
+    setMsg("프롬프트를 입력해 주세요.");
+    return;
+  }
+
+  const promptText = prompt.trim();
+
+  // 유저 메시지 채팅 로그에 추가
+  setChatMessages((prev) => [...prev, { role: "user", text: promptText }]);
+
+  // 엔터 치자마자 인풋 비우기
+  setPrompt("");
+
+  // 1️⃣ 아직 워크스페이스가 없는 경우 → 최초 프롬프트로 생성
+  if (!workspaceId) {
     if (!file) {
       setMsg("먼저 PDF 파일을 업로드하세요.");
       setChatMessages((prev) => [
@@ -152,21 +171,48 @@ export default function WorkspacePage() {
       ]);
       return;
     }
-    if (!prompt.trim()) {
-      setMsg("프롬프트를 입력해 주세요.");
-      return;
-    }
-
-    const promptText = prompt.trim();
-
-    // 유저 메시지 채팅 로그에 추가
-    setChatMessages((prev) => [...prev, { role: "user", text: promptText }]);
-
-    // 엔터 치자마자 비우기
-    setPrompt("");
 
     await doUploadAndCreateWorkspace(file, promptText);
-  };
+    return;
+  }
+
+  // 2️⃣ 이미 워크스페이스가 만들어진 후 → 챗엔드포인트 호출
+  try {
+    setMsg("질문을 전송했습니다. 응답을 기다리는 중입니다.");
+    const data = await chatWorkspace(workspaceId, promptText);
+
+    // 백엔드 응답에서 답변 텍스트만 추출 (형식 방어적으로 처리)
+    const assistantText =
+      data?.reply ||
+      data?.message ||
+      data?.content ||
+      (typeof data === "string"
+        ? data
+        : "응답을 받았지만 표시할 수 없는 형식입니다.");
+
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "assistant", text: assistantText },
+    ]);
+
+    // 혹시 응답에 workspace 정보가 같이 오면 화면에도 반영
+    if (data?.workspace) {
+      setResp(data.workspace);
+      setStatus(data.workspace.status || status);
+    }
+  } catch (e) {
+    const errMsg = `챗봇 요청 실패: ${e?.response?.status || ""} ${
+      e.message
+    }`;
+    setMsg(errMsg);
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "assistant", text: `❌ ${errMsg}` },
+    ]);
+  }
+};
+
+
 
   // ✅ 워크스페이스 상태 폴링 루프
   useEffect(() => {
