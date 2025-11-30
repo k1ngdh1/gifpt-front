@@ -59,12 +59,15 @@ export default function ProjectsPage() {
         if (cancelled) return;
 
         // 카드에서 사용할 최소 정보만 추려서 매핑
-        const mapped = (list || []).map((w) => ({
-          id: w.id,
-          title: w.title || `Workspace #${w.id}`,
-          thumbnail: "/projects/default.png", // 필요하면 백엔드 필드로 교체
-          status: w.status,
-        }));
+        // 예시: listWorkspaces() 결과를 mapped 배열로 만들 때
+const mapped = list.map((w) => ({
+  id: w.id,
+  title: w.title,
+  videoUrl: w.videoUrl,                 // ✅ 백엔드에서 온 videoUrl
+  thumbnail: "/projects/default.png",   // videoUrl 없을 때 쓸 기본 이미지
+  status: w.status,
+}));
+
 
         setProjects(mapped);
       } catch (e) {
@@ -154,16 +157,17 @@ export default function ProjectsPage() {
           )}
 
           {/* 실제 워크스페이스 카드들 */}
-          {!loading &&
-            projects.map((p) => (
-              <ProjectCard
-                key={p.id}
-                title={p.title}
-                thumbnail={p.thumbnail}
-                subtitle={p.status ? `Status: ${p.status}` : undefined}
-                onClick={() => handleOpenProject(p.id)}
-              />
-            ))}
+          {projects.map((p) => (
+  <ProjectCard
+    key={p.id}
+    title={p.title}
+    thumbnail={p.thumbnail}
+    videoUrl={p.videoUrl}                 // ✅ 여기!
+    subtitle={p.status && `Status: ${p.status}`}
+    onClick={() => handleOpenProject(p.id)}
+  />
+))}
+
 
           {/* 백엔드에서 가져온 프로젝트가 없으면, 기존 더미 카드 보여주기 */}
           {!loading &&
