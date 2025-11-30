@@ -1,9 +1,9 @@
-// src/pages/ProjectsPage.jsx
+// src/pages/MyProjectsPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ProjectCard from "../components/ProjectCard";
-import { listWorkspaces } from "../api/workspaces";
+import { listWorkspaces, deleteWorkspace } from "../api/workspaces"; // ✅ 하나로 정리
 
 // 백엔드에 아무 데이터도 없을 때 보여줄 데모 카드들
 const MOCK_PROJECTS = [
@@ -35,6 +35,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState([]); // 실제 워크스페이스 리스트
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null); // 삭제 중인 카드 표시용
 
   // 새 프로젝트 생성 → 워크스페이스로 이동
   const handleCreateNew = () => {
@@ -43,8 +44,29 @@ export default function ProjectsPage() {
 
   // 특정 워크스페이스 열기
   const handleOpenProject = (workspaceId) => {
-    // workspaceId를 쿼리로 넘겨서 WorkspacePage에서 불러오게 함
     navigate(`/workspace?workspaceId=${workspaceId}`);
+  };
+
+  // 🗑 워크스페이스 삭제
+  const handleDeleteProject = async (workspaceId) => {
+    const target = projects.find((p) => p.id === workspaceId);
+    const confirmMsg = target
+      ? `정말 "${target.title}" 프로젝트를 삭제할까요?\n(생성된 영상도 함께 삭제될 수 있습니다.)`
+      : "정말 이 프로젝트를 삭제할까요?";
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setDeletingId(workspaceId);
+      await deleteWorkspace(workspaceId); // ✅ DELETE /api/v1/workspaces/{id}
+      // 프론트 상태에서도 제거
+      setProjects((prev) => prev.filter((p) => p.id !== workspaceId));
+    } catch (e) {
+      console.error("Failed to delete workspace", e);
+      alert("프로젝트 삭제에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   // 마운트 시 내 워크스페이스 목록 조회
@@ -54,20 +76,18 @@ export default function ProjectsPage() {
     async function fetchProjects() {
       try {
         setLoading(true);
-        const list = await listWorkspaces(); // [{id, title, status, ...}, ...]
+        const list = await listWorkspaces(); // [{id, title, status, videoUrl, ...}, ...]
 
         if (cancelled) return;
 
         // 카드에서 사용할 최소 정보만 추려서 매핑
-        // 예시: listWorkspaces() 결과를 mapped 배열로 만들 때
-const mapped = list.map((w) => ({
-  id: w.id,
-  title: w.title,
-  videoUrl: w.videoUrl,                 // ✅ 백엔드에서 온 videoUrl
-  thumbnail: "/projects/default.png",   // videoUrl 없을 때 쓸 기본 이미지
-  status: w.status,
-}));
-
+        const mapped = list.map((w) => ({
+          id: w.id,
+          title: w.title,
+          videoUrl: w.videoUrl, // ✅ 백엔드에서 온 videoUrl
+          thumbnail: "/projects/default.png", // videoUrl 없을 때 쓸 기본 이미지
+          status: w.status,
+        }));
 
         setProjects(mapped);
       } catch (e) {
@@ -121,7 +141,6 @@ const mapped = list.map((w) => ({
               text-center px-6
             "
           >
-            {/* 플러스 원형 아이콘 */}
             <div
               className="
                 mb-4
@@ -157,17 +176,26 @@ const mapped = list.map((w) => ({
           )}
 
           {/* 실제 워크스페이스 카드들 */}
-          {projects.map((p) => (
-  <ProjectCard
-    key={p.id}
-    title={p.title}
-    thumbnail={p.thumbnail}
-    videoUrl={p.videoUrl}                 // ✅ 여기!
-    subtitle={p.status && `Status: ${p.status}`}
-    onClick={() => handleOpenProject(p.id)}
-  />
-))}
-
+          {!loading &&
+            projects.map((p) => (
+              <ProjectCard
+                key={p.id}
+                title={p.title}
+                thumbnail={p.thumbnail}
+                videoUrl={p.videoUrl}
+                subtitle={
+                  p.status
+                    ? `Status: ${p.status}${
+                        deletingId === p.id ? " (삭제 중...)" : ""
+                      }`
+                    : deletingId === p.id
+                    ? "삭제 중..."
+                    : undefined
+                }
+                onClick={() => handleOpenProject(p.id)}
+                onDelete={() => handleDeleteProject(p.id)} // ✅ 삭제 연결
+              />
+            ))}
 
           {/* 백엔드에서 가져온 프로젝트가 없으면, 기존 더미 카드 보여주기 */}
           {!loading &&

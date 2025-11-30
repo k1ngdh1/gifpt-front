@@ -247,7 +247,7 @@ const handleSend = async () => {
           ]);
           return; // stop
         }
-        if (!stop) timer = setTimeout(tick, 2000);
+        if (!stop) timer = setTimeout(tick, 5000);
       } catch (e) {
         const errMsg = `워크스페이스 상태 조회 실패: ${
           e?.response?.status || ""
@@ -257,7 +257,7 @@ const handleSend = async () => {
           ...prev,
           { role: "assistant", text: `❌ ${errMsg}` },
         ]);
-        if (!stop) timer = setTimeout(tick, 4000);
+        if (!stop) timer = setTimeout(tick, 5000);
       }
     };
 
