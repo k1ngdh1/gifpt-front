@@ -316,8 +316,9 @@ const handleSend = async () => {
             </div>
           </div>
 
-          {/* 결과/상태 패널 */}
-          <div className="lg:col-span-2 lg:row-span-2 rounded-2xl bg-white p-8 text-gray-800 shadow-[0_6px_18px_rgba(0,0,0,0.06)] border border-[#EEE] min-h-[520px]">
+                    {/* 결과/상태 패널 */}
+                    <div className="lg:col-span-2 lg:row-span-2 rounded-2xl bg-white shadow-[0_6px_18px_rgba(0,0,0,0.06)] border border-[#EEE] min-h-[520px]">
+            {/* 아직 아무 것도 안 한 상태 */}
             {!fileName && !resp && !uploading && !workspaceId ? (
               <div className="w-full h-full flex items-center justify-center">
                 <div className="text-center text-[#8B8E99]">
@@ -329,39 +330,51 @@ const handleSend = async () => {
                   <div className="text-2xl">🎬</div>
                 </div>
               </div>
+            ) : uploading ||
+              status === "PENDING" ||
+              status === "RUNNING" ? (
+              /* 🔥 분석 중(업로드/대기/PENDING/RUNNING)일 때: 전체 로딩 화면 */
+              <div className="w-full h-full flex flex-col items-center justify-center text-center px-6 py-8">
+                <div className="h-12 w-12 rounded-full border-4 border-[#E5E7EB] border-t-[#7C3AED] animate-spin mb-4" />
+                <p className="text-[15px] text-[#4B5563] font-medium">
+                  PDF를 분석하고 있어요...
+                </p>
+                <p className="mt-1 text-[13px] text-[#9CA3AF]">
+                  내용 이해 · 요약 · 영상 스크립트 생성까지 잠시만 기다려 주세요.
+                </p>
+                {workspaceId && (
+                  <p className="mt-3 text-[11px] text-[#D1D5DB]">
+                    워크스페이스 ID: {workspaceId}
+                  </p>
+                )}
+              </div>
             ) : (
-              <div className="space-y-3">
+              /* ✅ 분석 완료 또는 실패했을 때: 실제 결과 표시 */
+              <div className="space-y-3 px-6 py-5">
+                {/* 상단 상태 정보 */}
                 <div className="text-sm text-gray-600 space-y-1">
-                  {fileName && (
-                    <div>
-                      파일: <b>{fileName}</b>
-                    </div>
-                  )}
                   {workspaceId && (
                     <div>
-                      워크스페이스 ID: <code>{workspaceId}</code>
+                      워크스페이스 ID: <b>{workspaceId}</b>
                     </div>
                   )}
                   {status && (
                     <div>
-                      상태: <b>{status}</b>
+                      상태:{" "}
+                      <b
+                        className={
+                          status === "SUCCESS"
+                            ? "text-green-600"
+                            : status === "FAILED"
+                            ? "text-red-500"
+                            : "text-gray-700"
+                        }
+                      >
+                        {status}
+                      </b>
                     </div>
                   )}
-
-                  {/* 스피너 */}
-                  {uploading ||
-                  status === "PENDING" ||
-                  status === "RUNNING" ? (
-                    <div className="flex items-center gap-2">
-                      <span>메시지:</span>
-                      <span
-                        className="inline-block h-4 w-4 rounded-full border-2 border-[#C4B5FD] border-t-[#7C3AED] animate-spin"
-                        aria-label="Loading"
-                      />
-                    </div>
-                  ) : (
-                    msg && <div>메시지: {msg}</div>
-                  )}
+                  {msg && <div>메시지: {msg}</div>}
                 </div>
 
                 {/* 요약 결과가 있다면 먼저 보여주기 */}
@@ -373,19 +386,24 @@ const handleSend = async () => {
                     </div>
                   </div>
                 )}
+
+                {/* 생성된 영상 재생 */}
                 {resp?.videoUrl && (
-        <div className="mt-4">
-          <h2 className="font-semibold mb-2">생성된 영상</h2>
-          <video
-            src={resp.videoUrl}
-            controls
-            className="w-full max-h-[360px] rounded-xl border bg-black"
-          />
-        </div>
-      )}        
+                  <div className="mt-4">
+                    <h2 className="font-semibold mb-2">생성된 영상</h2>
+                    <video
+                      src={resp.videoUrl}
+                      controls
+                      className="w-full max-h-[360px] rounded-xl border bg-black"
+                    />
+                  </div>
+                )}
+
+                
               </div>
             )}
           </div>
+
 
           {/* 좌하단: 채팅 UI (프롬프트 입력/전송) */}
           <div className="lg:col-span-1 lg:-ml-2 rounded-2xl bg-white shadow-[0_6px_18px_rgba(0,0,0,0.06)] border border-[#EEE] flex flex-col">

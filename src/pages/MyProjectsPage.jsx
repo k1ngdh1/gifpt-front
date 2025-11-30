@@ -3,31 +3,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ProjectCard from "../components/ProjectCard";
-import { listWorkspaces, deleteWorkspace } from "../api/workspaces"; // ✅ 하나로 정리
+import { listWorkspaces, deleteWorkspace } from "../api/workspaces";
 
 // 백엔드에 아무 데이터도 없을 때 보여줄 데모 카드들
-const MOCK_PROJECTS = [
-  {
-    id: "linear-search",
-    title: "Linear Search",
-    thumbnail: "/linear_search.png",
-  },
-  {
-    id: "binary-search-tree",
-    title: "Binary Search Tree",
-    thumbnail: "/BST.png",
-  },
-  {
-    id: "bubble-sort",
-    title: "Bubble Sort",
-    thumbnail: "/BubbleSort.png",
-  },
-  {
-    id: "dijkstra",
-    title: "Dijkstra’s Algorithm",
-    thumbnail: "/projects/dijkstra.png",
-  },
-];
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
